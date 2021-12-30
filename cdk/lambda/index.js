@@ -1,29 +1,36 @@
 'use strict';
 
-const express                       = require( 'express' );
-const cors                          = require( 'cors' );
-const bodyParser                    = require( 'body-parser' );
-const session                       = require( 'express-session' );
-const passport                      = require( 'passport' );
+const express       = require( 'express' );
+const cors          = require( 'cors' );
+const bodyParser    = require( 'body-parser' );
+const session       = require( 'express-session' );
+const DynamoDBStore = require( 'connect-dynamodb' )( session );
+
 const logger                        = require( 'pino' )();
 const expressPino                   = require( 'express-pino-logger' );
+const passport                      = require( 'passport' );
 const { Strategy: GEOAxISStrategy } = require( '@mi-sec/passport-geoaxis-oauth' );
 
 const serverlessExpress = require( '@vendia/serverless-express' );
 
+const AWS = require( 'aws-sdk' );
+const DDB = new AWS.DynamoDB();
+
 const app = express();
 
-app.use( expressPino( { logger } ) );
 app.use( cors() );
 app.use( bodyParser.urlencoded( { extended: false } ) );
 app.use( bodyParser.json() );
+app.use( expressPino( { logger } ) );
 
 app.use( session( {
-    name: 'session',
-    secret: 'secret-session',
-    proxy: true,
+    secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    store: new DynamoDBStore( {
+        client: DDB,
+        table: process.env.DYNAMO_DB_SESSION_STORAGE_TABLE
+    } )
 } ) );
 
 passport.use( new GEOAxISStrategy(
@@ -55,8 +62,15 @@ app.get( '/', ( req, res ) => {
     res.end();
 } );
 
-app.get( '/ping', ( req, res ) => {
-    res.status( 200 ).json( { message: 'pong' } );
+app.get( '/failure', ( req, res ) => {
+    res.status( 403 ).json( { message: 'geoaxis signin failed' } );
+} );
+
+app.get( '/version', ( req, res ) => {
+    res.status( 200 ).json( {
+        version: process.env.VERSION,
+        deployedTime: process.env.DEPLOY_TIME
+    } );
 } );
 
 app.get( '/logout', ( req, res ) => {
@@ -78,19 +92,24 @@ app.get( '/logout', ( req, res ) => {
 
 app.get( '/profile', [
     ( req, res, next ) => {
+        console.log( 1 );
         req.session.origin = req.query.redirect_uri || req.headers.referer;
-
+        console.log( 2 );
         if ( !req.user ) {
             return passport.authenticate( 'geoaxis', {
-                failureRedirect: '/403-Forbidden'
+                failureRedirect: '/failure'
             } )( req, res, next );
         }
+
+        console.log( 3 );
 
         return next();
     },
     ( req, res ) => {
         try {
+            console.log( 4 );
             const profile = req.user.profile._json;
+            console.log( 5, profile );
 
             if ( profile.message ) {
                 if ( /failed/i.test( profile.message ) ) {
@@ -106,8 +125,6 @@ app.get( '/profile', [
             url.searchParams.set( 'email', profile.email );
             url.searchParams.set( 'PersonaDisplayName', profile.PersonaDisplayName );
 
-            // generate JWT access token
-
             if ( url.searchParams.get( 'show-profile' ) ) {
                 return res.status( 200 ).json( profile );
             }
@@ -116,6 +133,7 @@ app.get( '/profile', [
             }
         }
         catch ( e ) {
+            console.error( e );
             return res
                 .status( 500 )
                 .send( JSON.stringify( e, Object.getOwnPropertyNames( e ) ) )

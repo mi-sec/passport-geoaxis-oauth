@@ -96,7 +96,7 @@ export default {
     },
     methods: {
         setAuthenticated( profile ) {
-            console.log( profile );
+            this.$logger.log( profile );
             this.$store.state.geoaxis.isAuthenticated    = true;
             this.$store.state.geoaxis.uid                = profile.uid;
             this.$store.state.geoaxis.email              = profile.email;

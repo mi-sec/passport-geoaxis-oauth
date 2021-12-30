@@ -2,6 +2,7 @@
 
 const cdk                 = require( '@aws-cdk/core' );
 const { GeoaxisApiStack } = require( './lib/geoaxis-api-stack' );
+const { GeoaxisUiStack }  = require( './lib/geoaxis-ui-stack' );
 
 const app = new cdk.App();
 
@@ -20,5 +21,7 @@ new GeoaxisApiStack( app, 'GeoaxisApiStack', {
 
     /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 } );
+
+new GeoaxisUiStack( app, 'GeoaxisUiStack', {} );
 
 

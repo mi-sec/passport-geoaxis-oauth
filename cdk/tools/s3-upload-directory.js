@@ -5,10 +5,11 @@ const mime                     = require( 'mime-types' );
 const recursivelyReadDirectory = require( './recursively-read-directory' );
 
 async function s3UploadDirectory( localPath, bucketName, profile = '' ) {
-    AWS.config.credentials = new AWS.SharedIniFileCredentials( { profile } );
+    if ( profile || AWS.config.credentials.expired ) {
+        AWS.config.credentials = new AWS.SharedIniFileCredentials( { profile } );
+    }
 
-    const s3 = new AWS.S3();
-
+    const s3    = new AWS.S3();
     const files = await recursivelyReadDirectory( localPath );
 
     const uploads = [];

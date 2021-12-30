@@ -4,7 +4,7 @@ const cloudfront = require( '@aws-cdk/aws-cloudfront' );
 
 require( 'dotenv' ).config();
 
-class GeoaxisUiExampleStack extends cdk.Stack
+class GeoaxisUiStack extends cdk.Stack
 {
     constructor( scope, id, props )
     {
@@ -48,4 +48,4 @@ class GeoaxisUiExampleStack extends cdk.Stack
     }
 }
 
-module.exports = { GeoaxisUiExampleStack };
+module.exports = { GeoaxisUiStack };

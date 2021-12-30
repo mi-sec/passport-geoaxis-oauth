@@ -498,3 +498,4 @@ demo
 .creds
 
 cdk/outputs.json
+cdk/outputs-*.json
