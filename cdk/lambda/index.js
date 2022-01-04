@@ -16,6 +16,8 @@ const serverlessExpress = require( '@vendia/serverless-express' );
 const AWS = require( 'aws-sdk' );
 const DDB = new AWS.DynamoDB();
 
+const generatePolicy = require( './generatePolicy' );
+
 const app = express();
 
 app.use( cors() );
@@ -59,6 +61,8 @@ app.get( '/', ( req, res ) => {
     res.write( `<a href="${ process.env.AUTH_ROUTE }"><button>CAC Access</button></a>` );
     res.write( `<a href="${ process.env.LOGOUT_ROUTE }"><button>Logout</button></a>` );
     res.write( '<br/>' );
+    res.write( `<p id="queryparams"></p>` );
+    res.write( `<script>document.getElementById('queryparams').innerText=window.location.search;</script>` );
     res.end();
 } );
 
@@ -71,6 +75,10 @@ app.get( '/version', ( req, res ) => {
         version: process.env.VERSION,
         deployedTime: process.env.DEPLOY_TIME
     } );
+} );
+
+app.get( '/test', ( req, res ) => {
+    res.status( 200 ).json( serverlessExpress.getCurrentInvoke() );
 } );
 
 app.get( '/logout', ( req, res ) => {
@@ -90,26 +98,63 @@ app.get( '/logout', ( req, res ) => {
         .redirect( url );
 } );
 
-app.get( '/profile', [
+app.get( '/custom-authorizer', [
     ( req, res, next ) => {
-        console.log( 1 );
-        req.session.origin = req.query.redirect_uri || req.headers.referer;
-        console.log( 2 );
         if ( !req.user ) {
             return passport.authenticate( 'geoaxis', {
                 failureRedirect: '/failure'
             } )( req, res, next );
         }
 
-        console.log( 3 );
+        return next();
+    },
+    ( req, res ) => {
+        try {
+            const profile = req.user.profile._json;
+
+            if ( profile.message ) {
+                if ( /failed/i.test( profile.message ) ) {
+                    return res.status( 403 ).send( profile.message );
+                }
+                else {
+                    return res.status( 400 ).send( profile );
+                }
+            }
+
+            const { event } = serverlessExpress.getCurrentInvoke();
+
+            return res.status( 200 ).json(
+                generatePolicy( '*', 'Allow', event.methodArn, {
+                    uid: profile.uid,
+                    email: profile.email,
+                    name: profile.PersonaDisplayName
+                } )
+            );
+        }
+        catch ( e ) {
+            return res
+                .status( 500 )
+                .send( JSON.stringify( e, Object.getOwnPropertyNames( e ) ) )
+                .end();
+        }
+    }
+] );
+
+app.get( '/profile', [
+    ( req, res, next ) => {
+        req.session.origin = req.query.redirect_uri || req.headers.referer;
+
+        if ( !req.user ) {
+            return passport.authenticate( 'geoaxis', {
+                failureRedirect: '/failure'
+            } )( req, res, next );
+        }
 
         return next();
     },
     ( req, res ) => {
         try {
-            console.log( 4 );
             const profile = req.user.profile._json;
-            console.log( 5, profile );
 
             if ( profile.message ) {
                 if ( /failed/i.test( profile.message ) ) {
@@ -133,7 +178,6 @@ app.get( '/profile', [
             }
         }
         catch ( e ) {
-            console.error( e );
             return res
                 .status( 500 )
                 .send( JSON.stringify( e, Object.getOwnPropertyNames( e ) ) )

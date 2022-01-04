@@ -114,39 +114,25 @@ class GeoaxisApiStack extends cdk.Stack
             }
         } );
 
-        const httpApiGeoaxisIntegration = new apiGatewayV2Integrations.HttpLambdaIntegration(
-            'geoaxis-handler-integration', geoaxisLambda
-        );
+        const routes = [
+            { path: '/', method: apiGatewayV2.HttpMethod.ANY },
+            { path: '/version' },
+            { path: '/test' },
+            { path: '/custom-authorizer' },
+            { path: '/profile' },
+            { path: '/failure' },
+            { path: '/logout' }
+        ];
 
-        httpApi.addRoutes( {
-            path: '/',
-            methods: [ apiGatewayV2.HttpMethod.ANY ],
-            integration: httpApiGeoaxisIntegration
-        } );
-
-        httpApi.addRoutes( {
-            path: '/profile',
-            methods: [ apiGatewayV2.HttpMethod.ANY ],
-            integration: httpApiGeoaxisIntegration
-        } );
-
-        httpApi.addRoutes( {
-            path: '/failure',
-            methods: [ apiGatewayV2.HttpMethod.ANY ],
-            integration: httpApiGeoaxisIntegration
-        } );
-
-        httpApi.addRoutes( {
-            path: '/version',
-            methods: [ apiGatewayV2.HttpMethod.ANY ],
-            integration: httpApiGeoaxisIntegration
-        } );
-
-        httpApi.addRoutes( {
-            path: '/logout',
-            methods: [ apiGatewayV2.HttpMethod.ANY ],
-            integration: httpApiGeoaxisIntegration
-        } );
+        for ( let i = 0; i < routes.length; i++ ) {
+            httpApi.addRoutes( {
+                path: routes[ i ].path,
+                methods: [ routes[ i ].method || apiGatewayV2.HttpMethod.ANY ],
+                integration: new apiGatewayV2Integrations.HttpLambdaIntegration(
+                    'geoaxis-handler-integration', geoaxisLambda
+                )
+            } );
+        }
 
         new cdk.CfnOutput( this, 'apiUrl', {
             value: API_URL,
