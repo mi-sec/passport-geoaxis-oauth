@@ -36,7 +36,7 @@ class GeoaxisApiStack extends cdk.Stack
             partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING }
         } );
 
-        const auxiliaryRouteLambdaRole = new iam.Role( this, 'auxiliaryRouteLambdaRole', {
+        const geoaxisLambdaRole = new iam.Role( this, 'geoaxisLambdaRole', {
             assumedBy: new iam.ServicePrincipal( 'lambda.amazonaws.com' ),
             path: '/service-role/',
             inlinePolicies: {
@@ -90,7 +90,7 @@ class GeoaxisApiStack extends cdk.Stack
             handler: 'index.handler',
             memorySize: 1024,
             timeout: cdk.Duration.seconds( 30 ),
-            role: auxiliaryRouteLambdaRole,
+            role: geoaxisLambdaRole,
             code: lambda.Code.fromAsset( path.join( __dirname, '..', 'lambda' ) ),
             environment: {
                 VERSION: version,

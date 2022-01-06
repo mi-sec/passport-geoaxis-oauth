@@ -57,9 +57,13 @@ app.use( passport.initialize() );
 app.use( passport.session() );
 
 app.get( '/', ( req, res ) => {
+    const { event }        = serverlessExpress.getCurrentInvoke();
+    const customAuthorizer = new URL( '/custom-authorizer', `https://${ event.headers.host }` );
+
     res.setHeader( 'Content-Type', 'text/html' );
     res.write( `<a href="${ process.env.AUTH_ROUTE }"><button>CAC Access</button></a>` );
     res.write( `<a href="${ process.env.LOGOUT_ROUTE }"><button>Logout</button></a>` );
+    res.write( `<a href="${ customAuthorizer }"><button>custom authorizer</button></a>` );
     res.write( '<br/>' );
     res.write( `<p id="queryparams"></p>` );
     res.write( `<script>document.getElementById('queryparams').innerText=window.location.search;</script>` );
@@ -72,6 +76,7 @@ app.get( '/failure', ( req, res ) => {
 
 app.get( '/version', ( req, res ) => {
     res.status( 200 ).json( {
+        env: app.get( 'env' ),
         version: process.env.VERSION,
         deployedTime: process.env.DEPLOY_TIME
     } );
@@ -101,12 +106,18 @@ app.get( '/logout', ( req, res ) => {
 app.get( '/custom-authorizer', [
     ( req, res, next ) => {
         if ( !req.user ) {
-            return passport.authenticate( 'geoaxis', {
-                failureRedirect: '/failure'
-            } )( req, res, next );
-        }
+            const { event }   = serverlessExpress.getCurrentInvoke();
+            const redirectUrl = new URL( '/custom-authorizer', `https://${ event.headers.host }` );
+            const url         = new URL( '/profile', `https://${ event.headers.host }` );
+            url.searchParams.set( 'redirect_uri', redirectUrl.href );
 
-        return next();
+            req.session.origin = redirectUrl.href;
+            req.session.save();
+            return res.redirect( url.href );
+        }
+        else {
+            return next();
+        }
     },
     ( req, res ) => {
         try {
@@ -121,10 +132,10 @@ app.get( '/custom-authorizer', [
                 }
             }
 
-            const { event } = serverlessExpress.getCurrentInvoke();
+            const { context } = serverlessExpress.getCurrentInvoke();
 
             return res.status( 200 ).json(
-                generatePolicy( '*', 'Allow', event.methodArn, {
+                generatePolicy( '*', 'Allow', context.invokedFunctionArn, {
                     uid: profile.uid,
                     email: profile.email,
                     name: profile.PersonaDisplayName
