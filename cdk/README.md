@@ -1,6 +1,12 @@
 # CDK setup for GEOAxIS
 
-Project setup:
+Steps for setup:
+
+1. Register a OAuth consumer in [GEOAxIS PROD](https://portal.geoaxis.gs.mil/about/how-it-works/getting-started)
+   or [GEOAxIS DEV](https://portal-tst.geoaxis.gs.mil/about/how-it-works/getting-started)
+2. Copy the `.env.template` to `.env` and fill out appropriately
+
+Project deployment:
 
 ```
 cdk bootstrap aws://<account-id>/<region>
