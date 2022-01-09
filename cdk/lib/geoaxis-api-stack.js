@@ -99,9 +99,6 @@ class GeoaxisApiStack extends cdk.Stack
                 SESSION_SECRET: process.env.SESSION_SECRET || uuid.v4(),
                 DYNAMO_DB_SESSION_STORAGE_TABLE: geoaxisSessionStorageTable.tableName,
 
-                API_URL,
-                AUTH_ROUTE: `${ API_URL }/profile`,
-                LOGOUT_ROUTE: `${ API_URL }/logout`,
                 GEOAXIS_CALLBACK_URL: `${ API_URL }/profile`,
 
                 GEOAXIS_CLIENT_ID: process.env.GEOAXIS_CLIENT_ID,

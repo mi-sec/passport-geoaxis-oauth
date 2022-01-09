@@ -58,11 +58,13 @@ app.use( passport.session() );
 
 app.get( '/', ( req, res ) => {
     const { event }        = serverlessExpress.getCurrentInvoke();
+    const authRoute        = new URL( '/profile', `https://${ event.headers.host }` );
+    const logoutRoute      = new URL( '/logout', `https://${ event.headers.host }` );
     const customAuthorizer = new URL( '/custom-authorizer', `https://${ event.headers.host }` );
 
     res.setHeader( 'Content-Type', 'text/html' );
-    res.write( `<a href="${ process.env.AUTH_ROUTE }"><button>CAC Access</button></a>` );
-    res.write( `<a href="${ process.env.LOGOUT_ROUTE }"><button>Logout</button></a>` );
+    res.write( `<a href="${ authRoute }"><button>CAC Access</button></a>` );
+    res.write( `<a href="${ logoutRoute }"><button>Logout</button></a>` );
     res.write( `<a href="${ customAuthorizer }"><button>custom authorizer</button></a>` );
     res.write( '<br/>' );
     res.write( `<p id="queryparams"></p>` );
