@@ -10,8 +10,8 @@ endif
 clean:
 	@echo "cleaning project"
 	rm -rf ./ui/dist
-	@if [ -d "./outputs-api.json" ]; then rm ./outputs.json; fi
-	@if [ -d "./outputs-ui.json" ]; then rm ./outputs.json; fi
+	@if [ -d "./outputs-api.json" ]; then rm ./outputs-api.json; fi
+	@if [ -d "./outputs-ui.json" ]; then rm ./outputs-ui.json; fi
 
 prepare: clean
 	@echo "preparing project"
